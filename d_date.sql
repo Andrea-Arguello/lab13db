@@ -55,7 +55,7 @@ SELECT TO_CHAR(datum,'yyyymmdd')::INT AS date_dim_id,
        EXTRACT(doy FROM datum) AS day_of_year,
        TO_CHAR(datum,'W')::INT AS week_of_month,
        EXTRACT(week FROM datum) AS week_of_year,
-       TO_CHAR(datum,'YYYY"-W"IW-') || EXTRACT(isodow FROM datum) AS week_of_year_iso,
+       TO_CHAR(datum,'YYYY-WIW-') || EXTRACT(isodow FROM datum) AS week_of_year_iso,
        EXTRACT(MONTH FROM datum) AS month_actual,
        TO_CHAR(datum,'Month') AS month_name,
        TO_CHAR(datum,'Mon') AS month_name_abbreviated,
@@ -90,22 +90,22 @@ ORDER BY 1;
 COMMIT;
 
 --Busqueda
-SELECT * FROM d_date, "Invoice", "InvoiceLine" WHERE d_date.date_actual="Invoice"."InvoiceDate" AND "Invoice"."InvoiceId"="InvoiceLine"."InvoiceId";
+SELECT * FROM d_date, Invoice, InvoiceLine WHERE d_date.date_actual=Invoice.InvoiceDate AND Invoice.InvoiceId=InvoiceLine.InvoiceId;
 
 --Vista materializada
 CREATE MATERIALIZED VIEW analisis
 AS
 SELECT dd.week_of_year as semana, dd.month_actual as mes, dd.quarter_actual as trimestre, dd.year_actual as anio,
-	i."BillingCountry" as pais, i."BillingCity" as ciudad,
-	mt."Name" as audio,
-	gn."Name" as genero,
-	SUM(il."Quantity") as cant
-FROM d_date dd, "Invoice" i, "InvoiceLine" il, "Track" tr, "MediaType" mt, "Genre" gn
-WHERE dd.date_actual=i."InvoiceDate"
-	AND i."InvoiceId"=il."InvoiceId"
-	AND il."TrackId"=tr."TrackId"
-	AND mt."MediaTypeId"=tr."MediaTypeId"
-	AND gn."GenreId"=tr."GenreId"
+	i.BillingCountry as pais, i.BillingCity as ciudad,
+	mt.Name as audio,
+	gn.Name as genero,
+	SUM(il.Quantity) as cant
+FROM d_date dd, Invoice i, InvoiceLine il, Track tr, MediaType mt, Genre gn
+WHERE dd.date_actual=i.InvoiceDate
+	AND i.InvoiceId=il.InvoiceId
+	AND il.TrackId=tr.TrackId
+	AND mt.MediaTypeId=tr.MediaTypeId
+	AND gn.GenreId=tr.GenreId
 GROUP BY CUBE(semana,mes,trimestre,anio,pais,ciudad,audio,genero)
 WITH DATA;
 
